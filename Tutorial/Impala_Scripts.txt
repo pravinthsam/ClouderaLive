@@ -1,0 +1,30 @@
+## Top 10 product urls accessed
+SELECT count(*) as c, url
+FROM tokenized_access_logs
+WHERE url LIKE '%\/product\/%'
+GROUP BY url
+ORDER BY c DESC
+LIMIT 10;
+
+## Top 10 revenue generating products
+SELECT p.product_name, sum(cast(oi.order_item_subtotal as float)) as s
+FROM order_items oi
+INNER JOIN products p on oi.order_item_product_id=p.product_id
+INNER JOIN (
+  SELECT *
+  FROM orders
+  WHERE order_status <> 'CANCELLED'
+  AND order_status <> 'SUSPECTED_FRAUD' ) o
+on o.order_id=oi.order_item_order_id
+GROUP BY p.product_name
+ORDER BY s DESC
+LIMIT 10;
+
+## Top 10 product categories
+SELECT c.category_name, count(oi.order_item_quantity) as cnt
+FROM order_items oi
+INNER JOIN products p on oi.order_item_product_id=p.product_id
+INNER JOIN categories c on p.product_category_id=c.category_id
+GROUP BY c.category_name
+ORDER BY cnt desc
+LIMIT 10;
