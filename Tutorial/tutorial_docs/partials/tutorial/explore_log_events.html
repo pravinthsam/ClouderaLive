@@ -1,0 +1,139 @@
+ <aside>
+<h4>Good to Know</h4>
+
+            <p>Flume is a scalable, real-time ingest framework that allows you to route, filter, aggregate, and perform "mini-operations" on data on its way into a scalable processing platform like CDH. However, you do want to minimize the logic done on its way into the cluster, This will  assure ready availability for other workloads and prevent ingest bottlenecks. It still allows you to utilize the huge scalability of the CDH cluster for more heavy-duty processing. If you need to do some heavy-duty aggregations or multi-step ETL of incoming data, you should use Spark - an in-memory processing framework that scales with the rest of the processing framework and has advanced analytic capabilities built in.</p>
+            <p>Note also that in real production systems it might be a better option to pipe any log events through syslog. This provides a more robust production deployment, as it does not depend on file appends.</p>
+</aside>
+ <h2 class="blog-post-title">Tutorial Exercise 5</h2>
+        <p class="lead blog-description">Explore Log Events Interactively</p>
+
+        <p>What you can do to enable guided drill down and exploration of data is to make it searchable. By indexing your data using any of the indexing options provided by Cloudera Search, your data can be searchable to a variety of audiences. You can choose to batch index data using the MapReduce Indexing tool, or as in our example below, extend the Apache Flume configuration that is already ingesting the web log data to also post events to Apache Solr for indexing in real-time.</p>
+
+<p>The web log data is standard web server log which may look something like this:
+<img src='media/flume_1.png' class='img-responsive' />
+</p>
+
+<p>Solr organizes data similarly to the way a SQL database does. Each record is called a 'document' and consists of fields defined by the schema: just like a row in a database table. Instead of a table, Solr calls it a 'collection' of documents. The difference is that data in Solr tends to be more loosely structured. Fields may be optional, and instead of always matching exact values, you can also enter text queries that partially match a field, just like you're searching for web pages. You'll also see Hue refer to 'shards' - and that's just the way Solr breaks collections up to spread them around the cluster so you can search all your data in parallel.</p>
+
+<p>Here is how you can start real-time-indexing via Cloudera Search and Flume over the sample web server log data and use the Search UI in Hue to explore it:</p>
+
+<h3>Create your search index</h3>
+<p>Ordinarily when you are deploying a new search schema, there are four steps:
+
+<ol>
+<li>
+<h4>Creating an empty configuration</h4>
+<p>For the sake of this tutorial, you won't need to actually execute steps 1 or 2, as we have included the configuration and the schema file in your cluster already.  They can be reviewed by exploring /opt/examples/flume/solr_configs.</p>
+<p>If you were doing this on your own, you would generate the configs by executing the following command:
+<pre>
+{{prompt}} solrctl --zk {{zookeeper_connection_string}}/solr instancedir --generate solr_configs</pre>
+<div class="alert alert-danger" role="alert">You don't need to do this for this tutorial.  We have already generated the configuration for you.  This instruction is here in case you want to create your own index. 
+</div>
+The result of this command would be a skeleton configuration that you could then customize to your liking.  The primary thing that you would ordinarily be customizing is the conf/schema.xml, which we cover in the next step.
+</li>
+
+
+
+<li>
+<h4>Edit your schema</h4>
+<p>As mentioned previously, we have already generated the configuration files for you.  You can <a href="media/schema.xml.txt" target="_BLANK">view the modified sample schema here</a>.</p>
+<p>The most common area that you would be interested in is the &lt;fields&gt;&lt;/fields&gt; section.  From this area you can define the fields that are present and searchable in your index.</p>
+</li>
+<li>
+<h4>Uploading your configuration</h4>
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd2">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd2=true" zeroclip-text="cd /opt/examples/flume%%NL%%">Copy</button></div>
+{{prompt}} cd /opt/examples/flume</pre>
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd3">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd3=true" zeroclip-text="solrctl --zk {{zookeeper_connection_string}}/solr instancedir --create live_logs ./solr_configs%%NL%%">Copy</button></div>
+{{prompt}} solrctl --zk {{zookeeper_connection_string}}/solr instancedir --create live_logs ./solr_configs</pre>
+<div ng-if="!cluster_data.real" class="alert alert-info" role="alert">You may need to replace {{ cluster_data.data_nodes.join(', ') }} with the IP addresses of your three data nodes.</div>
+</li>
+
+
+<li>
+<h4>Creating your collection</h4>
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd4">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd4=true" zeroclip-text="solrctl --zk {{zookeeper_connection_string}}/solr collection --create live_logs -s {{ cluster_data.data_nodes.length }}%%NL%%">Copy</button></div>
+{{prompt}} solrctl --zk {{zookeeper_connection_string}}/solr collection --create live_logs -s {{ cluster_data.data_nodes.length }}</pre>
+<div ng-if="!cluster_data.real" class="alert alert-info" role="alert">You may need to replace {{ cluster_data.data_nodes.join(', ') }}, with the IP addresses of your three data nodes.</div>
+</li>
+</ol>
+<p>You can verify that you successfully created your collection in Solr by going to Hue, and clicking <strong>Search</strong> in the top menu<br />
+<img src="media/solr_1.png" class="img-responsive" />
+</p>
+
+
+<p>Then click on <strong>Indexes</strong> from the top right to see all of the indexes/collections<Br />
+<img src="media/solr_2.png" class="img-responsive" />
+</p>
+
+
+<p>Now you can see the collection that we just created, <strong>live_logs</strong>, click on it.<br /><img src="media/solr_3.png" class="img-responsive" />
+</p>
+
+
+<p>You are now viewing the fields that we defined in our schema.xml file<br /><img src="media/solr_4.png" class="img-responsive" /></p>
+
+
+
+<p>Now that you have verified that your search collection/index was created successfully, we can start putting data into it using Flume and Morphlines. Flume is a tool for ingesting streams of data into your cluster from sources such as log files, network streams, and more. Morphlines is a Java library for doing ETL on-the-fly, and it's an excellent companion to Flume. It allows you to define a chain of tasks like reading records, parsing and formatting individual fields, and deciding where to send them, etc. We've defined a morphline that reads records from Flume, breaks them into the fields we want to search on, and loads them into Solr (You can read more about Morphlines <a href="http://blog.cloudera.com/blog/2013/07/morphlines-the-easy-way-to-build-and-integrate-etl-apps-for-apache-hadoop/">here</a>). This example Morphline is defined at /opt/examples/flume/conf/morphline.conf, and we're going to use it to index our records in real-time as they're created and ingested by Flume.</p>
+
+
+<h3>Starting the Log Generator</h3>
+<p>Your Cloudera Live cluster has a log generator for use with sample data.  Start the log generator by running the following command
+    
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd5">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd5=true" zeroclip-text="start_logs%%NL%%">Copy</button></div>
+{{prompt}} start_logs</pre>
+
+You can verify that the log generator has started by running
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd6">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd6=true" zeroclip-text="tail_logs%%NL%%">Copy</button></div>
+{{prompt}} tail_logs</pre>
+When you're done watching the logs, you can hit &lt;Ctrl + C&gt; to return to your terminal.
+
+You should see a screen similar to the one below:
+<img src="media/log_generator.png" class="img-responsive" />
+          </p>
+
+Later, if you want to stop the log generator you can:
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd7">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd7=true" zeroclip-text="stop_logs%%NL%%">Copy</button></div>
+{{prompt}} stop_logs</pre>
+
+<h3>Flume and the morphline</h3>          
+<p>Now that we have an empty Solr index, and live log events coming in to our fake access.log, we can use Flume and morphlines to load the index with the real-time log data.</p>
+
+<p>The key player in this tutorial is <strong>Flume</strong>.  Flume is a system for collecting, aggregating, and moving large amounts of log data from many different sources to a centralized data source.</p>  
+
+<p>With a few simple configuration files, we can use Flume and a morphline (a simple way to accomplish on-the-fly ETL,) to load our data into our Solr index.</p>
+
+<p><em>You can use Flume to load many other types of data stores; Solr is just the example we are using for this tutorial.</em></p>
+
+<div class="alert alert-info" role="alert"><p>You can review the <a href="media/flume.conf.txt" target="_BLANK">flume.conf</a> file and the <a href="media/morphline.conf.txt" target="_BLANK">morphline.conf</a> that it uses.</p></div>
+
+
+<p>
+Start the Flume agent by executing the following command:
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd8">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd8=true" zeroclip-text="flume-ng agent --conf /opt/examples/flume/conf --conf-file /opt/examples/flume/conf/flume.conf --name agent1 -Dflume.root.logger=DEBUG,INFO,console%%NL%%">Copy</button></div>
+{{prompt}} flume-ng agent \
+    --conf /opt/examples/flume/conf \
+    --conf-file /opt/examples/flume/conf/flume.conf \
+    --name agent1 \
+    -Dflume.root.logger=DEBUG,INFO,console</pre>
+This will start running the Flume agent in the foreground.  Once it has started, and is processing records, you should see something like: 
+<img src="media/flume_2.png" class="img-responsive" />
+</p>
+
+<p>Now you can go back to the Hue UI
+            (refer back to your cluster's guidance page for the link),
+    and click 'Search' from the collection's page:
+    <img src="media/search_index.png" class="img-responsive bordered" />
+You will be able to search, drill down into, and browse the events that have been indexed.
+    <img src="media/flume_3.png" class="img-responsive" />
+</p>
+
+
+<p>If one of these steps fails, please reach out to our <a href="http://community.cloudera.com/t5/Cloudera-Live/bd-p/ClouderaLive" target="_FORUM_BLANK">Cloudera Live Forum</a>
+ and get help.
+    Otherwise, you can start exploring the log data and understand what is going on.</p>
+
+<p>For our story’s sake, we pretend that you started indexing data the same time as you started ingesting it (via Flume) to the platform, so that when your manager escalated the issue, you could immediately drill down into data from the last three days and explore what happened. For example, perhaps you noted a lot of DDOS events and could take the right measures to preempt the attack. Problem solved! Management is fantastically happy with your recent contributions, which of course leads to a great bonus or something similar. :D</p>
+
+<h3>CONCLUSION</h3>
+<p>Now you have learned how to use Cloudera Search to allow exploration of data in real time, using Flume and Solr and Morphlines. Further, you now understand how you can serve multiple use cases over the same data - as well as from previous steps: serve multiple data sets to provide bigger insights. The flexibility and multi-workload capability of a Hadoop-based Enterprise Data Hub are some of the core elements that have made Hadoop valuable to organizations world wide.</p>

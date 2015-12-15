@@ -1,0 +1,24 @@
+ <h2 class="blog-post-title">Showing &quot;Data Hub&quot; Value</h2>
+        <p class="lead blog-description">Unified Storage for All of Your Data</p>
+
+
+        <h3>Scenario:</h3>
+        <p><strong>Your Management:</strong> can't believe the magic you do with data and is about to promote you and invest in a new team under your lead... when all hell breaks loose.  You get an emergency call - as you are now the go-to person - and your manager is screaming about the loss of sales over the last three days...</p>
+<p><strong>You:</strong> from slightly excited to under the gun in seconds...well, lucky for you there might be a quick way to find out what is happening...</p>
+
+
+
+<div ng-if="platform!='quickstart'">
+<p>
+Go to Cloudera Manager’s home page <span ng-if="cluster_data.real">(<a href="http://{{cluster_data.master_node_ip}}:7180">here</a>)</span>
+and verify the following services are up:
+<ul>
+    <li>Solr</li>
+    <li>YARN</li>
+    <li>HDFS</li>
+    <li>Hue</li>
+</ul>
+
+<img src='media/cloudera_manager_ex_4.png' class='img-responsive bordered' />
+</div>
+

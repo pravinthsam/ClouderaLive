@@ -1,0 +1,143 @@
+<h2 class="blog-post-title">Tutorial Exercise 2</h2>
+<p class="lead blog-description">Query Structured Data</p>
+
+<p>We're going to use Hue's Impala app to create the metadata for our tables in Hue, and then query them. Hue provides a web-based interface for many of the tools in CDH and can be found on port 8888 of your Master Node
+<span ng-if="cluster_data.real">(<a href="http://{{cluster_data.master_node_ip}}:8888" target="_FORUM_BLANK">here</a>).</span>
+<span ng-if="!cluster_data.real"> - you can find a link in the <strong>Explore Your Data</strong> section of your cluster's guidance page, which your welcome email will direct you to.  Click on &quot;Get Started with Hue&quot;.</span>
+<span ng-if="platform != 'quickstart'">Refer to your welcome email to find your credentials for logging into Hue.</span>
+<span ng-if="platform == 'quickstart'">In the QuickStart VM, the administrator username for Hue is 'cloudera' and the password is 'cloudera'.</span>
+
+<img src="media/hue_1.png" class="img-responsive" /></p>
+
+<p>Once you are inside of Hue, click on Query Editors, and open the Impala Query Editor.
+<img src="media/hue_2.png" class="img-responsive" />
+</p>
+
+Copy and paste the queries below, and hit enter.
+<pre class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd8">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd8=true" zeroclip-text="CREATE EXTERNAL TABLE categories STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/categories'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_categories.avsc');
+
+CREATE EXTERNAL TABLE customers STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/customers'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_customers.avsc');
+
+CREATE EXTERNAL TABLE departments STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/departments'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_departments.avsc');
+
+CREATE EXTERNAL TABLE orders STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/orders'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_orders.avsc');
+
+CREATE EXTERNAL TABLE order_items STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/order_items'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_order_items.avsc');
+
+CREATE EXTERNAL TABLE products STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/products'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_products.avsc');%%NL%%">Copy</button></div>
+CREATE EXTERNAL TABLE categories STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/categories'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_categories.avsc');
+
+CREATE EXTERNAL TABLE customers STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/customers'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_customers.avsc');
+
+CREATE EXTERNAL TABLE departments STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/departments'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_departments.avsc');
+
+CREATE EXTERNAL TABLE orders STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/orders'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_orders.avsc');
+
+CREATE EXTERNAL TABLE order_items STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/order_items'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_order_items.avsc');
+
+CREATE EXTERNAL TABLE products STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/products'
+TBLPROPERTIES ('avro.schema.url'='hdfs://{{cluster_data.master_node}}/user/examples/sqoop_import_products.avsc');
+</pre>
+
+<span ng-if="!cluster_data.real">Note: make sure you substitute the HDFS paths above (“hdfs://{{cluster_data.master_node}}”) with the correct namenode for your environment, if it doesn't match.</span>
+Delete the queries currently in the editor, and run the following to verify all of the tables were created.
+
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd9">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd9=true" zeroclip-text="show tables;%%NL%%">Copy</button></div>
+show tables;</pre>
+
+<p>You can also click on the "Refresh Table List" icon on the left to see your new tables.</p>
+<img src="media/hue_5.png" class="img-responsive" /></p>
+<p>
+
+<p>Now that your transaction data is readily available for structured queries in CDH, it's time to address DataCo’s business question. Copy and paste or type in the following standard SQL example queries for calculating total revenue per product and showing the top 10 revenue generating products:</p>
+
+<pre class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd2">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd2=true" zeroclip-text="-- Most popular product categories
+select c.category_name, count(order_item_quantity) as count
+from order_items oi
+inner join products p on oi.order_item_product_id = p.product_id
+inner join categories c on c.category_id = p.product_category_id
+group by c.category_name
+order by count desc
+limit 10;%%NL%%">Copy</button></div>
+-- Most popular product categories
+select c.category_name, count(order_item_quantity) as count
+from order_items oi
+inner join products p on oi.order_item_product_id = p.product_id
+inner join categories c on c.category_id = p.product_category_id
+group by c.category_name
+order by count desc
+limit 10;
+</pre>
+          </p>
+        
+          <p>You should see results of the following form:
+        <img src="media/hue_6.png" class="img-responsive" />
+          </p>
+          
+          <p>
+Clear out the previous query, and replace it with the following:
+          <pre class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd3">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd3=true" zeroclip-text="-- top 10 revenue generating products
+select p.product_id, p.product_name, r.revenue
+from products p inner join
+(select oi.order_item_product_id, sum(cast(oi.order_item_subtotal as float)) as revenue
+from order_items oi inner join orders o
+on oi.order_item_order_id = o.order_id
+where o.order_status <> 'CANCELED'
+and o.order_status <> 'SUSPECTED_FRAUD'
+group by order_item_product_id) r
+on p.product_id = r.order_item_product_id
+order by r.revenue desc
+limit 10;%%NL%%">Copy</button></div>
+-- top 10 revenue generating products
+select p.product_id, p.product_name, r.revenue
+from products p inner join
+(select oi.order_item_product_id, sum(cast(oi.order_item_subtotal as float)) as revenue
+from order_items oi inner join orders o
+on oi.order_item_order_id = o.order_id
+where o.order_status <> 'CANCELED'
+and o.order_status <> 'SUSPECTED_FRAUD'
+group by order_item_product_id) r
+on p.product_id = r.order_item_product_id
+order by r.revenue desc
+limit 10;
+</pre>
+
+
+You should see results similar to this:              
+              
+              <img src="media/hue_7.png" class="img-responsive" />
+        
+          </p>        
+            
+
+          <p>If one of these steps fails, please reach out to our <a href="http://community.cloudera.com/t5/Cloudera-Live/bd-p/ClouderaLive" target="_FORUM_BLANK">Cloudera Live Forum</a>
+ and get help. Otherwise continue.</p>
+
+<h3>CONCLUSION</h3>
+<p>Now you have learned how to create and query tables using Impala and that you can use regular interfaces and tools (such as SQL) within a Hadoop environment as well. The idea here being that you can do the same reports you usually do, but where the architecture of Hadoop vs traditional systems provides much larger scale and flexibility.</p>

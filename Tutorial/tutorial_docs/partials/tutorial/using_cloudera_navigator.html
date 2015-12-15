@@ -1,0 +1,82 @@
+ <h2 class="blog-post-title">Tutorial Exercise 7</h2>
+        <p class="lead blog-description">Data Governance and Compliance</p>
+
+<h3>Discovery</h3>
+
+<p>The first thing you see when you log into Cloudera Navigator is a search tool.  It's an excellent way to find data on your cluster, even when you don't know exactly what you're looking for.  Go ahead and click the 'Query Builder' link.</p>
+
+<img src="media/navigator_2.png" class="img-responsive" />
+
+<p>You know you got the data about website views from server access logs, so go ahead and enter this to begin your query:</p>
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd2">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd2=true" zeroclip-text="*access*log*">Copy</button></div>
+*access*log*
+</pre>
+
+<p>You also know it was you, the admin, who imported the data, and you remember that you used Hive to prepare it for querying.  Check the 'Hive' box under 'Source Type', the 'Table' box under 'Type, and the 'admin' box under 'User'.  You'll notice that as you check boxes to narrow down your query, other options are updated according to the new results.</p>
+
+<img src="media/navigator_3.png" class="img-responsive" />
+
+<p>Click the 'Show Results' button to complete your search.  Upon seeing the results, you recognize the tokenized_access_table.  That must be the one you queried!</p>
+
+<img src="media/navigator_4.png" class="img-responsive" />
+
+<h3>Lineage</h3>
+
+<p>Now that you've found the data you were looking for, click on the table and you'll see a graph of the data's lineage.  You'll see the tokenized_access_logs table on the right and the underlying file with the same name in HDFS in red.  You'll see the other Hive table you created from the original file and the query you ran to transform the data between the two.  (The different colors represent different source types: yellow data comes from Hive, red data comes from HDFS).<p>
+
+<img src="media/navigator_9.png" class="img-responsive" />
+
+<p>Click on the tokenized_access_logs table and the intermediate_access_logs table and you'll see arrows for each field running through that query.</p>
+
+<img src="media/navigator_10.png" class="img-responsive" />
+
+<h3>Auditing</h3>
+
+<p>Now you've shown where the data came from, but we still need to show what's been done with it.  Go to the 'Audits' tab, using the link in the top-right corner.</p>
+
+<img src="media/navigator_12.png" class="img-responsive" />
+
+<p>As you can see, there are hundreds of events that have been recorded, each with details of what was done, by whom, and when.  Let's narrow down what we're looking for again.  Open the "Filters" menu from below the "Audit Events" heading.</p>
+
+<img src="media/navigator_13.png" class="img-responsive" />
+
+<p>Click the + icon twice to add two new filters.  For the first filter, set the property to 'Username' and fill in 'admin' as the value.  For the second filter, set the property to 'Operation' and fill in 'QUERY' as the value.  Then click 'Apply'.
+
+<img src="media/navigator_14.png" class="img-responsive" />
+
+<p>As you click on the individual results, you can see the exact queries that were executed and all related details.</p>
+
+<img src="media/navigator_15.png" class="img-responsive" />
+
+<p>You can also view and create reports based on the results of these searches on the left-hand corner.  There's already a report called "Recent Denied Accesses".  If you checked that report now, you may see that in the course of this tutorial, some tools have tried to access a directory called '/user/anonymous' that we haven't set up, and that the services don't have permission to create.</p>
+
+<h3>Policies</h3>
+
+<p>It's a relief to be able to audit access to your cluster and see there's no unexpected or unauthorized activity going on.  But wouldn't it be even nicer if we could automatically apply policies to data?  Let's open the policies tab in the top-right hand corner and create a policy to make the data we just audited easier to find in the future.</p>
+
+<img src="media/navigator_16.png" class="img-responsive" />
+
+<p>Click the + icon to add a new policy, name your policy "Tag Insecure Data".  Check the box to enable the policy, and enter the following as the search query:</p>
+
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd1">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd1=true" zeroclip-text="(permissions:&quot;rwxrwxrwx&quot;) AND (sourceType:hdfs) AND (type:file OR type:directory) AND (deleted:false)">Copy</button></div>
+(permissions:"rwxrwxrwx") AND (sourceType:hdfs) AND (type:file OR type:directory) AND (deleted:false)
+</pre>
+
+<p>This query will detect any files in HDFS that allow anyone to read, write and execute.  It's common for people to set these permissions to make sure everything works, but your organization may want to refine this practice as you move into production or implement more strict practices for some data sets.</p>
+
+<img src="media/navigator_18.png" class="img-responsive" />
+
+
+<p>To apply this tag on existing data, set the schedule to "Immediate", and check the box "Assign Metadata".  Under tags, enter "insecure", and then click "Add Tag".  Save the policy.</p>
+
+<p>Return to the search window and search for "insecure", and you will immediately see all files that are in violation of this new policy.</p>
+
+<img src="media/navigator_19.png" class="img-responsive" />
+<p>If you would like to automatically apply this tag to data as it changes, return to the policies tab and edit the policy's schedule to be "On Data Change".  Then the tag will be applied to any file that is assigned these permissions in the future.
+
+<h3>CONCLUSION</h3>
+
+<p>You've now experienced how to use Cloudera Navigator for discovery of data and metadata. This powerful tool makes it easy to audit access, trace data lineage, and enforce policies.</p>
+
+<p>With more data, and more data formats available in a multi-tenant environment data lineage and governance is getting challenging.  Cloudera Navigator provides enterprise-grade governance that’s built into the foundation of Hadoop.</p>
+

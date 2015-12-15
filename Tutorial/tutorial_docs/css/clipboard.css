@@ -1,0 +1,16 @@
+.clip_area div {
+    text-align: right;
+    width: 100%;
+    display: inline-block;
+}
+
+button.copy_button {
+    margin-left: 5px;
+}
+
+.copy_label {
+    color: #087898;
+}
+
+.clip_area {
+}

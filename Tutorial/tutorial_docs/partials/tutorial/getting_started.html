@@ -1,0 +1,67 @@
+<aside>
+<h4>Good to Know</h4>
+        <p>Any successful PoC needs to address something your organization cares about. Hence, the first thing you need to do is to: <strong>define a business question</strong>.</p> 
+        <p>It won't just impress your manager that you <em>think big</em> and <em>have perspective on the business needs</em> of your organisation (which in English means you just helped your manager to look good in front of his management). It will also help you to go through a well scoped PoC and get the investments you need to be successful.</p> 
+<p>Without a well defined question, you won't know how to properly model your data, i.e. what structure to apply at query time, or what data sets and tools to use to best serve the use case.</p>
+</aside>
+<h2 class="blog-post-title">Getting Started</h2>
+        <p class="lead blog-description">Define a Business Question</p>
+
+        <p>For the remainder of this tutorial, we will present examples in the context of a made up corporation called DataCo, and our mission is to help the organization get better insight by asking bigger questions.</p>
+
+
+
+        <h3>Scenario:</h3>
+        <p><strong>Your Management:</strong> is talking euphorically about <em>Big Data</em>...</i></p>
+        <p><strong>You:</strong> are carefully skeptical, as it will most likely all land on your desk anyway. Alternatively it has already landed on you, with the nice project description of: <em>Go figure this Hadoop thing out</em>...</p>
+
+<div ng-if="platform!='quickstart'">
+<h3>Preparation:</h3>
+<p ng-if="!cluster_data.real">From your guidance page, please note the IP addresses of your different servers, as they will be referenced throughout this document.  Where you see this document refer to Master_Node_IP or Data_Node_1_IP, replace that with the IP address for that node found on your guidance page.</p>
+
+<p>
+Verify your environment.  Go to Cloudera Manager 
+<span ng-if="!cluster_data.real">(you can find a link in the <strong>Cloudera Manager</strong> section of your cluster's guidance page, which your welcome email will direct you to),</span>
+<span ng-if="cluster_data.real">(<a href="http://{{cluster_data.master_node_ip}}:7180">here</a>)</span>
+ and make sure the following services are up and running (i.e. have a green status dot next to them in the Cloudera Manager HOME Status view):
+<ul>
+    <li>Impala - which we will use for interactive query</li>
+    <li>Hive - which we will use for structured storage (i.e. tables in the Hive metastore)</li>
+    <li>Hue - which we will use for end user query access</li>
+    <li>HDFS - which we will use for distributed data storage</li>
+    <li>YARN - processing framework used by Hive (includes MR2)</li>
+</ul>
+
+
+
+
+
+</p>    
+    
+    
+    
+<p>    
+<pre>
+<b>Steps...</b>
+1. Go to your guidance page
+2. Click on the link for "Launch Cloudera Manager"
+3. Check that the services listed above have a green circle next to them.
+</pre>
+
+<img src="media/cloudera_manager_ex_1.png" class="img-responsive bordered" />
+<em>
+    If any of the services show yellow or red, restart the service or reach out to the <a href="http://community.cloudera.com/t5/Cloudera-Live/bd-p/ClouderaLive" target="_FORUM_BLANK">Cloudera Live Forum</a>
+ for further assistance. 
+</em>
+</p>
+<p>
+<pre>
+<b>Starting/Restarting a service...</b>
+1. Click on the dropdown menu to the right of the service name
+2. Click on Start or Restart
+3. Wait for your service to turn to green
+</pre>
+<img src="media/restart_service.png" class="img-responsive bordered" />
+</p>
+<p>Now that you have verified that your services are healthy and showing green, you can continue.</p>
+</div>

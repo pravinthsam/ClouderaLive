@@ -1,0 +1,134 @@
+SOLR_LOCATOR : {
+  collection : live_logs       # Name of solr collection
+  zkHost : "10.98.227.3:2181,10.98.227.4:2181,10.98.227.6:2181/solr" # ZooKeeper ensemble
+}
+
+morphlines: [{
+  id: morphline
+  importCommands: ["org.kitesdk.**","org.apache.solr.**"]
+  commands : [
+    {
+      readLine {
+        charset : UTF-8
+      }
+    }
+    {
+      grok {
+        dictionaryFiles : [/opt/examples/flume/morphlines/dictionaries/]
+        extract: inplace
+        expressions : {
+          message : """%{IPORHOST:ip} %{USER:user} %{USER:auth} \[%{HTTPDATE:request_date}\] "(?:%{WORD:method} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:full_request})" %{NUMBER:status} (?:%{NUMBER:size}|-) "(%{DATA:unknown_field})" "(%{DATA:user_agent})""""
+        }
+      }
+    }
+    {
+      convertTimestamp {
+        field : request_date
+        inputFormats : ["dd/MMM/yyyy:HH:mm:ss Z", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd"]
+        inputTimezone : America/Los_Angeles
+        outputFormat : "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        outputTimezone : UTC
+      }
+    }
+    {
+      java {  
+        imports : "import java.util.*;import java.util.regex.*;"        
+        code: """
+          String department = "";
+          String category = "";
+          String product = "";
+          String action = "";
+
+          String request_key = record.get("request").get(0).toString();
+
+          if(request_key.equals("/home")) {
+            action = "view home";
+          }
+
+          Pattern pDepartment = Pattern.compile("/department/(.+?)/");
+          Matcher mDepartment = pDepartment.matcher(request_key);
+
+          while (mDepartment.find()) {
+            department = mDepartment.group(1);
+            action = "view department";
+          }
+
+          Pattern pCategory = Pattern.compile("/department/(.+?)/category/(.*)");
+          Matcher mCategory = pCategory.matcher(request_key);
+
+          while (mCategory.find()) {
+            department = mCategory.group(1);
+            category = mCategory.group(2);
+            action = "view category products"; 
+          }
+
+          Pattern pProduct = Pattern.compile("/product/(.*)");
+          Matcher mProduct = pProduct.matcher(request_key);
+
+          while (mProduct.find()) {
+            product = mProduct.group(1);
+            action = "view product";
+          }
+
+          Pattern pAddToCart = Pattern.compile("/add_to_cart/(.*)");
+          Matcher mAddToCart = pAddToCart.matcher(request_key);
+
+          while (mAddToCart.find()) {
+            product = mAddToCart.group(1);
+            action = "add product to cart";
+          }
+
+          if(request_key.equals("/view_cart")) {
+            action = "view cart";
+          }
+
+          if(request_key.equals("/checkout")) {
+            action = "checkout";
+          }
+
+          if(request_key.equals("/support")) {
+            action = "support";
+          }
+
+          if(request_key.equals("/contact_us")) {
+            action = "contact us";
+          }
+
+          if(!department.equals("")) {
+            record.put("department",department);
+          }
+          if(!category.equals("")) {
+            record.put("category",category);
+          }
+          if(!product.equals("")) {
+            record.put("product",product);
+          }
+
+          record.put("action",action);
+          return child.process(record);
+        """
+      }
+    }
+    { 
+      generateUUID {   
+        field : ignored_base_id  
+      } 
+    }
+    {
+      generateSolrSequenceKey {
+        baseIdField: ignored_base_id
+        solrLocator : ${SOLR_LOCATOR}
+      }
+    }
+    {
+      sanitizeUnknownSolrFields {
+        solrLocator : ${SOLR_LOCATOR}
+      }
+    }
+    {
+      loadSolr {
+        solrLocator : ${SOLR_LOCATOR}
+      }
+    }
+  ]
+}]

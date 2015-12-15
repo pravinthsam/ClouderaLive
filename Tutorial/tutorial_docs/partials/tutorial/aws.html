@@ -1,0 +1,38 @@
+<h2 class="blog-post-title">Your Cloudera Cluster</h2>
+<p class="lead blog-description">Connecting to AWS</p>
+<p>
+Before you can begin with this tutorial, you need to be able to log into your cluster using SSH (specifically, you'll be logging into the <strong>Master Node</strong>).
+</p>
+<p>
+When a cluster is created using CloudFormation, an existing key-pair was chosen. One of the keys in this pair was downloaded when it was created in the form of a .pem file. You must already have possession of this file. The other key is stored by Amazon and is installed in your instances when they are created.
+</p>
+<p>
+If you have forgotten which key-pair was used, you can look up the name of the key-pair in the "Key Name" column of the list of instances, accessible from your EC2 Dashboard. The tags and other identifiers you can use to locate the instances were chosen when instantiating the CloudFormation template.
+</p>
+
+<img src="media/key_names.png" class="img-responsive bordered" />
+
+<p>
+Once you have the .pem file for your chosen key-pair, you can find instructions for connecting to your instances <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstances.html" target="_BLANK">here</a>.  You'll be logging in as the user 'ec2-user'.
+</p>
+
+
+<p ng-if="flavor == 'cloudera-tableau'">To log in to the Windows instance running Tableau Desktop (as opposed to the Linux instances running Cloudera Manager and CDH), you will need to get the Windows Adminstrator password for that instance. From the <em>EC2 Dashboard</em>, click <em>Instances</em>, and enter the following into the search bar:</p>
+
+<pre ng-if="flavor == 'cloudera-tableau'" class="clip_area"><div><span class="copy_label" ng-show="copied_cmd1">tag:aws:cloudformation:logical-id: Tableau</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd1=true" zeroclip-text="start_logs%%NL%%">Copy</button></div>
+tag:aws:cloudformation:logical-id: Tableau</pre>
+
+<img ng-if="flavor == 'cloudera-tableau'" src="media/windows_pass1.png" class="img-responsive bordered" />
+
+<p ng-if="flavor == 'cloudera-tableau'">With that instance selected, click <em>Action</em> and then <em>Get Windows Password</em>.</p>
+
+<img ng-if="flavor == 'cloudera-tableau'" src="media/windows_pass2.png" class="img-responsive bordered" />
+
+<p ng-if="flavor == 'cloudera-tableau'">Next to <em>Key Pair Path</em>, there's a control to upload a .pem file: navigate to the key you selected when creating your cluster, and once it is selected click <em>Decrypt Password</em>.</p>
+
+<img ng-if="flavor == 'cloudera-tableau'" src="media/windows_pass3.png" class="img-responsive bordered" />
+
+<p ng-if="flavor == 'cloudera-tableau'">All the details required to log in to the Tableau node via Remote Desktop will now be displayed, including the hostname of the instance, the user name (<em>Administrator</em>, and the password.</p>
+
+<img ng-if="flavor == 'cloudera-tableau'" src="media/windows_pass4.png" class="img-responsive bordered" />
+

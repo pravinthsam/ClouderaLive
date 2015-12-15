@@ -1,0 +1,151 @@
+<aside>
+<h4>About Spark:</h4>
+<p>If you are familiar with MapReduce, you will notice that this Spark example uses very similar concepts of 'map' and 'reduce' operations (the 'join' and 'groupBy' operations are just special variations of 'reduce').  The key advantage, though, of using Spark is that the code is more concise and the intermediate results can be stored in memory - allowing us to do complex, iterative sequences much faster.</p>
+<p>Using MapReduce may still be a good option when you are using more data than can fit in memory on your cluster (e.g. petabytes of data). </p>
+</aside>
+
+<h2 class="blog-post-title">Tutorial Exercise 4</h2>
+
+<p class="lead blog-description">Relationship strength analytics using Spark</p>
+
+<p>You come up with a great idea that it would be interesting for the marketing team which products are most commonly purchased together. Perhaps there are optimizations to be made in marketing campaigns to position components together that will generate a strong lead pipeline?  Perhaps they can use product correlation data to help up sales for the lesser viewed products?  Or recover revenue for the product that was on the top 10 viewed, but not top 10 sold from last exercise?</p>
+
+<p>The tool in CDH best suited for quick analytics on object relationships is Apache Spark.  You can compose a Spark job to do this work and give you insight on product relationships.</p>
+
+<pre class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd1">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd1=true" zeroclip-text="spark-shell --jars {{ lib_dir }}/avro/avro-mapred.jar --conf spark.serializer=org.apache.spark.serializer.KryoSerializer%%NL%%">Copy</button></div>
+{{prompt}} spark-shell --jars {{ lib_dir }}/avro/avro-mapred.jar \
+    --conf spark.serializer=org.apache.spark.serializer.KryoSerializer
+</pre>
+
+<img src='media/spark_example_1.png' class='img-responsive' />
+
+<div class="alert alert-warning" role="alert">
+   <b>Note:</b>  After a few seconds, you should see the spark shell.  If you do not, you may need to hit the enter key. 
+</div>
+
+
+<p>Once you have the <strong>scala&gt;</strong> prompt, paste the following code, and hit enter.</p>
+
+<pre class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd2">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd2=true" zeroclip-text="import org.apache.avro.generic.GenericRecord
+import org.apache.avro.mapred.{AvroInputFormat, AvroWrapper}
+import org.apache.hadoop.io.NullWritable
+
+val warehouse = &quot;hdfs://{{cluster_data.master_node}}/user/hive/warehouse/&quot;
+
+val order_items_path = warehouse + &quot;order_items&quot;
+val order_items = sc.hadoopFile[AvroWrapper[GenericRecord], NullWritable, AvroInputFormat[GenericRecord]](order_items_path)
+
+val products_path = warehouse + &quot;products&quot;
+val products = sc.hadoopFile[AvroWrapper[GenericRecord], NullWritable, AvroInputFormat[GenericRecord]](products_path)
+
+val orders = order_items.map { x =&gt; (
+    x._1.datum.get(&quot;order_item_product_id&quot;),
+    (x._1.datum.get(&quot;order_item_order_id&quot;), x._1.datum.get(&quot;order_item_quantity&quot;)))
+}.join(
+  products.map { x =&gt; (
+    x._1.datum.get(&quot;product_id&quot;),
+    (x._1.datum.get(&quot;product_name&quot;)))
+  }
+).map(x =&gt; (
+    scala.Int.unbox(x._2._1._1), // order_id
+    (
+        scala.Int.unbox(x._2._1._2), // quantity
+        x._2._2.toString // product_name
+    )
+)).groupByKey()
+
+val cooccurrences = orders.map(order =&gt;
+  (
+    order._1,
+    order._2.toList.combinations(2).map(order_pair =&gt;
+        (
+            if (order_pair(0)._2 &lt; order_pair(1)._2) (order_pair(0)._2, order_pair(1)._2) else (order_pair(1)._2, order_pair(0)._2),
+            order_pair(0)._1 * order_pair(1)._1
+        )
+    )
+  )
+)
+val combos = cooccurrences.flatMap(x =&gt; x._2).reduceByKey((a, b) =&gt; a + b)
+val mostCommon = combos.map(x =&gt; (x._2, x._1)).sortByKey(false).take(10)
+
+println(mostCommon.deep.mkString(&quot;\n&quot;))
+
+exit%%NL%%">Copy</button></div>
+// First we're going to import the classes we need and open some of the files
+// we imported from our relational database into Hadoop with Sqoop
+</pre>
+<pre>
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.mapred.{AvroInputFormat, AvroWrapper}
+import org.apache.hadoop.io.NullWritable
+
+val warehouse = "hdfs://{{cluster_data.master_node}}/user/hive/warehouse/"
+
+val order_items_path = warehouse + "order_items"
+val order_items = sc.hadoopFile[AvroWrapper[GenericRecord], NullWritable, AvroInputFormat[GenericRecord]](order_items_path)
+
+val products_path = warehouse + "products"
+val products = sc.hadoopFile[AvroWrapper[GenericRecord], NullWritable, AvroInputFormat[GenericRecord]](products_path)
+</pre>
+<pre>
+// Next, we extract the fields from order_items and products that we care about
+// and get a list of every product, its name and quantity, grouped by order
+</pre>
+<pre>
+val orders = order_items.map { x => (
+    x._1.datum.get("order_item_product_id"),
+    (x._1.datum.get("order_item_order_id"), x._1.datum.get("order_item_quantity")))
+}.join(
+  products.map { x => (
+    x._1.datum.get("product_id"),
+    (x._1.datum.get("product_name")))
+  }
+).map(x => (
+    scala.Int.unbox(x._2._1._1), // order_id
+    (
+        scala.Int.unbox(x._2._1._2), // quantity
+        x._2._2.toString // product_name
+    )
+)).groupByKey()
+</pre>
+<pre>
+// Finally, we tally how many times each combination of products appears
+// together in an order, and print the 10 most common combinations.
+</pre>
+<pre>
+val cooccurrences = orders.map(order =>
+  (
+    order._1,
+    order._2.toList.combinations(2).map(order_pair =>
+        (
+            if (order_pair(0)._2 < order_pair(1)._2) (order_pair(0)._2, order_pair(1)._2) else (order_pair(1)._2, order_pair(0)._2),
+            order_pair(0)._1 * order_pair(1)._1
+        )
+    )
+  )
+)
+val combos = cooccurrences.flatMap(x => x._2).reduceByKey((a, b) => a + b)
+val mostCommon = combos.map(x => (x._2, x._1)).sortByKey(false).take(10)
+
+println(mostCommon.deep.mkString("\n"))
+
+exit
+</pre>
+
+<p>To better understand this script, you could read through the comments which aim to explain what each block does and the basic process we're going through.</p>
+
+<p>When we do a 'map', we specify a function that will take each record and output a modified record. This is useful when we only need a couple of fields from each record or when we need the record to use a different field as the key: we simply invoke map with a function that takes in the entire record, and returns a new record with the fields and the key we want.</p>
+
+<p>The 'reduce' operations - like 'join' and 'groupBy' - will organize these records by their keys so we can group similar records together and then process them as a group. For instance, we group every purchased item by which specific order it was in - allowing us to determine all the combinations of products that were part of the same order.</p>
+
+<p>You should see a result similar to the following:
+    <img src='media/spark_results.png' class='img-responsive' />
+</p>
+
+<p ng-if="platform!='quickstart'">Note that messages from other nodes in the cluster may have been printed since the result, and you may need to scroll up to see the results.</p>
+
+<h3>CONCLUSION</h3>
+<p>If it weren't for Spark, doing cooccurrence analysis like this would be an extremely arduous and time-consuming task.  However, using Spark, and a few lines of scala, you were able to produce a list of the items most frequently purchased together in very little time.
+</p>

@@ -1,0 +1,42 @@
+<h2 class="blog-post-title">Showing &quot;Data Hub&quot; Value</h2>
+<p class="lead blog-description">Runtime live search over the Big Data</p>
+
+
+<p>To show you one more option, we pretend that you have your real timesearch over log events set up in a sliding window
+    approach (using the aliasing feature in Solr perhaps...hint hint). Meaning, you only keep the last 24 hrs of data
+    indexed, as no business unit has really sponsored the capacity planning for Search yet (which through these
+    exercises we hope you will be able to change).</p>
+
+<p>Well, in that case, you can kick off an on-demand Cloudera Search indexing job, using the MapReduce batch indexing
+    tool. You can make the last week’s weblog data available, and then go in and inspect what started happening 3 days
+    ago.</p>
+
+<h4>Preparation Steps</h4>
+<ul>
+    <li>Create your Solr schema (you can reuse the same schema as for the previous collection)</li>
+    <li>Ensure the solr collection (live_logs) exists. You can check in solr admin UI: http://{{cluster_data.data_nodes_ip[0]}}:8983/solr
+    </li>
+    <li>Create your Morphlines (actually, you can again reuse the same Morphlines as in previous step, as
+        Morphline is workload agnostic!)
+    </li>
+    <li>Upload the sample weblog to HDFS<br/>
+        <ul>
+            <li>identify the location of the web log (e.g. access.log)</li>
+            <li>upload the web log(s) to HDFS<br/>
+                <pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd1">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd1=true" zeroclip-text="hdfs dfs -put /opt/examples/log_files/access.log.2 hdfs://{{cluster_data.master_node}}/user/examples/%%NL%%">Copy</button></div>
+                {{prompt}} hdfs dfs -put /opt/examples/log_files/access.log.2 hdfs://{{cluster_data.master_node}}/user/examples/</pre>
+            </li>
+        </ul>
+    </li>
+</ul>
+<h4>Run Hadoop Job</h4>
+
+<p>Kick off your MapReduce Indexing workload via the MapReduceIndexer</p>
+
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd2">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd2=true" zeroclip-text="hadoop jar {{lib_dir}}/solr/contrib/mr/search-mr-*-job.jar org.apache.solr.hadoop.MapReduceIndexerTool --output-dir hdfs://{{cluster_data.master_node}}/user/examples/live_log_index -v --morphline-file /opt/examples/flume/conf/morphline.conf --zk-host {{zookeeper_connection_string}}/solr --go-live --collection live_logs hdfs://{{cluster_data.master_node}}/user/examples/access.log.2%%NL%%">Copy</button></div>
+{{prompt}} hadoop jar {{lib_dir}}/solr/contrib/mr/search-mr-*-job.jar org.apache.solr.hadoop.MapReduceIndexerTool --output-dir hdfs://{{cluster_data.master_node}}/user/examples/live_log_index -v --morphline-file /opt/examples/flume/conf/morphline.conf --zk-host {{zookeeper_connection_string}}/solr --go-live --collection live_logs hdfs://{{cluster_data.master_node}}/user/examples/access.log.2</pre>
+
+<p><strong>The command kicks off a MapReduce job for Solr indexing. As mentioned before it uses the same
+    morphline file from the previous example.</strong></p>
+<p>You can now follow the same steps as shown above via Hue to start exploring your new week of log data
+    collection, through the same UI.</p>

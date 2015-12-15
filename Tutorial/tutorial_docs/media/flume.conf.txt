@@ -1,0 +1,33 @@
+agent1.sources = source1
+agent1.sinks = solrSink
+agent1.channels = channel1
+
+# Describe/configure source1
+agent1.sources.source1.type = exec
+agent1.sources.source1.command = tail -F /opt/gen_logs/logs/access.log
+
+# Describe solrSink
+agent1.sinks.solrSink.type = org.apache.flume.sink.solr.morphline.MorphlineSolrSink
+agent1.sinks.solrSink.channel = memoryChannel
+agent1.sinks.solrSink.batchSize = 1000
+agent1.sinks.solrSink.batchDurationMillis = 1000
+agent1.sinks.solrSink.morphlineFile = /opt/examples/flume/conf/morphline.conf
+agent1.sinks.solrSink.morphlineId = morphline
+agent1.sinks.solrSink.threadCount = 1
+
+# Use a channel which buffers events to a file
+agent1.channels.channel1.type = FILE 
+
+# The maximum size of transaction supported by the channel
+agent1.channels.channel1.capacity = 20000
+agent1.channels.channel1.transactionCapacity = 1000
+
+# Amount of time (in millis) between checkpoints
+agent1.channels.channel1.checkpointInterval 3000
+
+# Max size (in bytes) of a single log file 
+agent1.channels.channel1.maxFileSize = 2146435071
+
+# Bind the source and sink to the channel
+agent1.sources.source1.channels = channel1
+agent1.sinks.solrSink.channel = channel1

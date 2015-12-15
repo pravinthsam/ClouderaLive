@@ -1,0 +1,95 @@
+<aside>
+<h4>About Sqoop:</h4>
+        <p>Apache Sqoop is a tool that uses MapReduce to transfer data between Hadoop clusters and relational databases very efficiently. It works by spawning tasks on multiple data nodes to download various portions of the data in parallel. When you're finished, each piece of data is replicated to ensure reliability, and spread out across the cluster to ensure you can process it in parallel on your cluster.</p> 
+        <p>There are 2 versions of Sqoop included in Cloudera's platform. Sqoop 1 is a "thick client" and is what you use in this tutorial. The command you run will directly submit the MapReduce jobs to transfer the data. Sqoop 2 consists of a central server that submits the MapReduce jobs on behalf of clients, and a much lighter weight client that you use to connect to the server. The "Sqoop" you see in Cloudera Manager is the Sqoop 2 server, although Cloudera Manager will make sure that both the "sqoop" and "sqoop2" command are correctly configured on all your machines.</p>
+</aside>
+
+<h2 class="blog-post-title">Tutorial Exercise 1</h2>
+        <p class="lead blog-description">Ingest Structured Data</p>
+
+        <p>In this scenario, DataCo’s business question is: <em>What products do our customers like to buy?</em>
+        
+       To answer this question, the first thought might be to look at the transaction data, which should indicate what customers actually do buy and like to buy, right?</p>
+<p>This is probably something you can do in your regular RDBMS environment, but a benefit with Cloudera’s platform is that you can do it at greater scale at lower cost, on the same system that you may also use for many other types of analysis.</p>
+
+<p>What this exercise demonstrates is how to do exactly the same thing you already know how to do, but in CDH. Seamless integration is important when evaluating any new infrastructure. Hence, it’s important to be able to do what you normally do, and not break any regular BI reports or workloads over the dataset you plan to migrate.</p>
+
+<img src="media/image06.png" class="img-responsive bordered" />
+
+<p>To analyze the transaction data in the new platform, we need to ingest it into the Hadoop Distributed File System (HDFS). We need to find a tool that easily transfers structured data from a RDBMS to HDFS, while preserving structure. That enables us to query the data, but not interfere with or break any regular workload on it.</p>
+<p>Apache Sqoop, which is part of CDH, is that tool. The nice thing about Sqoop is that we can automatically load our relational data from MySQL into HDFS, while preserving the structure.</p>
+<p>With a few additional configuration parameters, we can take this one step further and load this relational data directly into a form ready to be queried by Impala (the open source analytic query engine included with CDH).  Given that we may want to leverage the power of the Apache Avro file format for other workloads on the cluster (as Avro is a Hadoop optimized file format), we will take a few extra steps to load this data into Impala using the Avro file format, so it is readily available for Impala as well as other workloads.</p>
+<p ng-if="platform=='gogrid'">You should first log in to the Master Node of your cluster using SSH - you can get the credentials using the instructions on <a href="#/tutorial/go_grid">Your Cloudera Cluster</a>.  Once you are logged in, you can launch the Sqoop job:</p>
+<p ng-if="platform=='aws'">You should first log in to the Master Node of your cluster using SSH - you can get instructions for doing so under <a href="#/tutorial/aws">Your Cloudera Cluster</a>.  Once you are logged in, you can launch the Sqoop job:</p>
+<p ng-if="platform=='quickstart'">You should first open a terminal, which you can do by clicking the black "Terminal" icon at the top of your screen.  Once it is open, you can launch the Sqoop job:</p>
+<p ng-if="platform=='generic'">You must first log in to a terminal on your Master Node.  Once it is open, you can launch the Sqoop job:</p>
+
+<p><pre ng-if="platform!='quickstart'" class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd1">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd1=true" zeroclip-text="sqoop import-all-tables -m 3 --connect jdbc:mysql://{{cluster_data.master_node}}:3306/retail_db --username=retail_dba --password=cloudera --compression-codec=snappy --as-avrodatafile --warehouse-dir=/user/hive/warehouse%%NL%%">Copy</button></div>
+{{prompt}} sqoop import-all-tables \
+    -m 3 \
+    --connect jdbc:mysql://{{cluster_data.master_node}}:3306/retail_db \
+    --username=retail_dba \
+    --password=cloudera \
+    --compression-codec=snappy \
+    --as-avrodatafile \
+    --warehouse-dir=/user/hive/warehouse
+</pre></p>
+<pre ng-if="platform=='quickstart'" class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd2">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd2=true" zeroclip-text="sqoop import-all-tables -m 1 --connect jdbc:mysql://{{cluster_data.master_node}}:3306/retail_db --username=retail_dba --password=cloudera --compression-codec=snappy --as-avrodatafile --warehouse-dir=/user/hive/warehouse%%NL%%">Copy</button>
+  </div>
+{{prompt}} sqoop import-all-tables \
+    -m 1 \
+    --connect jdbc:mysql://{{cluster_data.master_node}}:3306/retail_db \
+    --username=retail_dba \
+    --password=cloudera \
+    --compression-codec=snappy \
+    --as-avrodatafile \
+    --warehouse-dir=/user/hive/warehouse
+</pre>
+        
+<p>This command may take a while to complete, but it is doing a lot.  It is launching MapReduce jobs to export the data from our MySQL database, and put those export files in Avro format in HDFS.  It is also creating the Avro schema, so that we can easily load our Hive tables for use in Impala later.
+
+<h3>Verification step:</h3>
+<p>When this command is complete, confirm that your Avro data files exist in HDFS.</p>
+
+<p><pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd3">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd3=true" zeroclip-text="hadoop fs -ls /user/hive/warehouse%%NL%%">Copy</button></div>
+{{prompt}} hadoop fs -ls /user/hive/warehouse</pre>
+Will show a folder for each of the tables.</p>
+
+<p><pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd4">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd4=true" zeroclip-text="hadoop fs -ls /user/hive/warehouse/categories/%%NL%%">Copy</button></div>
+{{prompt}} hadoop fs -ls /user/hive/warehouse/categories/</pre>
+Will show the files that live inside of the categories folder.</p>
+
+<img src="media/verify_sqoop_2.png" class="img-responsive" />
+
+<p>Sqoop should also have created schema files for this data in your home directory.</p>
+
+<em>Avro schema files:</em>
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd5">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd5=true" zeroclip-text="ls -l *.avsc%%NL%%">Copy</button></div>
+{{prompt}} ls -l *.avsc</pre>
+Should show .avsc files for the six tables that were in our retail_db.
+
+<img src="media/verify_sqoop_1.png" class="img-responsive" />
+
+<p>Note that the schema and the data are stored in separate files. The schema is only applied when the data is queried, a technique called 'schema-on-read'. This gives you the flexibility to query the data with SQL while it's still in a format usable by other systems as well. Whereas a traditional database requires the schema to be defined before entering any data, we have already imported a lot of data and will only now specify how it's structure should be interpreted.</p>
+
+Apache Hive will need the schema files too, so let's copy them into HDFS where Hive can easily access them.
+
+<pre class="clip_area">
+<div><span class="copy_label" ng-show="copied_cmd6">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd6=true" zeroclip-text="sudo -u hdfs hadoop fs -mkdir /user/examples%%NL%%sudo -u hdfs hadoop fs -chmod +rw /user/examples%%NL%%hadoop fs -copyFromLocal ~/*.avsc /user/examples/%%NL%%">Copy</button></div>
+{{prompt}} sudo -u hdfs hadoop fs -mkdir /user/examples
+{{prompt}} sudo -u hdfs hadoop fs -chmod +rw /user/examples
+{{prompt}} hadoop fs -copyFromLocal ~/*.avsc /user/examples/
+</pre>
+
+<p>Now that we have the data, we can prepare it to be queried. We're going to do this in the next section using Impala, but you may notice we imported this data into Hive's directories. Hive and Impala both read their data from files in HDFS, and they even share metadata about the tables. The difference is that Hive executes queries by compiling them to MapReduce jobs. As you will see later, this means it can be more flexible, but is much slower. Impala is an MPP query engine that reads the data directly from the file system itself. This allows it to execute queries fast enough for interactive analysis and exploration.</p>
+
+<p>If one of these steps fails, please reach out to our <a href="http://community.cloudera.com/t5/Cloudera-Live/bd-p/ClouderaLive" target="_FORUM_BLANK">Cloudera Live Forum</a>
+ and get help.</p>
+
+<h3>CONCLUSION</h3>
+
+<p>Now you have gone through the first basic steps to Sqoop structured data into HDFS, transform it into Avro file format (you can read about the benefits of Avro as a common format in Hadoop <a href="http://blog.cloudera.com/blog/2011/07/avro-data-interop/">here</a>), and import the schema files for use when we query this data.</p>
+
+

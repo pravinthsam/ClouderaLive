@@ -1,0 +1,25 @@
+
+            <h2 class="blog-post-title">Your Cloudera Cluster</h2>
+        <p class="lead blog-description">Finding your server credentials</p>
+<p>
+Before you can begin with this tutorial, you need to know the credentials for your servers.
+The main server that you will SSH into is your <strong>Master Node</strong> and you'll look up the root password by its IP address:
+<span ng-if="cluster_data.real">{{cluster_data.master_node_ip}}</span>
+<span ng-if="!cluster_data.real">this can be found on your cluster's Guidance Page</span>
+
+<img src="media/gogrid2_o1.png" class="img-responsive bordered" />
+
+</p>
+<p>
+Once you know your Master Node IP address, please log in to your GoGrid console at <a href='http://my.gogrid.com/' target='_BLANK'>my.gogrid.com</a> with the credentials that you used when you set up your account.
+This will take you to a screen that shows all of the servers that are in your cluster.  
+<img src="media/gogrid_o2.png" class="img-responsive bordered" />
+</p>
+<p>
+Click on the Passwords button to see the passwords screen.
+<img src="media/gogrid_o3.png" class="img-responsive bordered" />
+</p>
+<p>
+The passwords screen shows you the root passwords for the nodes in your cluster.  The host that you will be logging in to is the Master Node (that you collected the IP address for).
+<img src="media/gogrid_o4.png" class="img-responsive bordered" />
+</p>

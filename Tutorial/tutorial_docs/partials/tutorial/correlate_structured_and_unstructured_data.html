@@ -1,0 +1,156 @@
+<h2 class="blog-post-title">Tutorial Exercise 3</h2>
+        <p class="lead blog-description">Correlate Structured Data with Unstructured Data</p>
+
+
+        <p>Since you are a pretty smart data person,
+            you realize another interesting business question would be: <em>are the most viewed products also the most sold?</em>
+(or for other scenarios, the most searched for, the most chatted about…). Since Hadoop can store unstructured and semi-structured data alongside structured data without remodelling an entire database, you can just as well ingest, store and process web log events. Let's find out what site visitors have actually viewed the most.</p>
+
+<p>For this, you need the web clickstream data. The most common way to ingest web clickstream is to use Flume. Flume is a scalable real-time ingest framework that allows you to route, filter, aggregate, and do “mini-operations” on data on its way in to the scalable processing platform.</p>
+
+<p>In Exercise 4, later in this tutorial, you can explore a Flume configuration example, to use for real-time ingest and transformation of our sample web clickstream data. However, for the sake of tutorial-time, in this step, we will not have the patience to wait for three days of data to be ingested. Instead, we prepared a web clickstream data set (just pretend you fast forwarded three days) that you can bulk upload into HDFS directly.</p>
+
+<h3>Bulk Upload Data</h3>
+<p>For convenience, we have loaded a sample (about 20MM lines) of one month's worth of access log data into /opt/examples/log_data/access.log.2.</p>
+
+<p>Let's move this data from the local filesystem, into HDFS.</p>
+
+<p>Go back to your terminal and execute the following commands from your <strong>Master Node</strong>.
+
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd1">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd1=true" zeroclip-text="sudo -u hdfs hadoop fs -mkdir /user/hive/warehouse/original_access_logs%%NL%%sudo -u hdfs hadoop fs -copyFromLocal /opt/examples/log_files/access.log.2 /user/hive/warehouse/original_access_logs%%NL%%">Copy</button></div>
+{{prompt}} sudo -u hdfs hadoop fs -mkdir /user/hive/warehouse/original_access_logs
+{{prompt}} sudo -u hdfs hadoop fs -copyFromLocal /opt/examples/log_files/access.log.2 /user/hive/warehouse/original_access_logs
+</pre>
+</p>
+
+<p>The copy command may take several minutes to complete.</p>
+
+<p>Verify that your data is in HDFS by executing the following command:
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd2">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd2=true" zeroclip-text="hadoop fs -ls /user/hive/warehouse/original_access_logs%%NL%%">Copy</button></div>
+{{prompt}} hadoop fs -ls /user/hive/warehouse/original_access_logs
+</pre>
+</p>
+
+<p>You should see a result similar to the following:
+    <img src='media/verify_hdfs_1.png' class='img-responsive' />
+</p>
+
+<p>Now you can build a table in Hive and query the data via Impala and Hue. You'll build this table in 2 steps. First, you'll take advantage of Hive's flexible SerDes (serializers / deserializers) to parse the logs into individual fields using a regular expression. Second, you'll transfer the data from this intermediate table to one that does not require any special SerDe. Once the data is in this table, you can query it much faster and more interactively using Impala.</p>
+
+<p>We'll query Hive using a command-line JDBC client for Hive called Beeline.  You can invoke it from the terminal with the following:
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd6">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd6=true" zeroclip-text="beeline -u jdbc:hive2://{{cluster_data.master_node}}:10000/default -n admin -d org.apache.hive.jdbc.HiveDriver%%NL%%">Copy</button></div>
+{{prompt}} beeline -u jdbc:hive2://{{cluster_data.master_node}}:10000/default -n admin -d org.apache.hive.jdbc.HiveDriver
+</pre>
+</p>
+
+<p>Once the Beeline shell is connected, run the following queries:
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd4">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd4=true" zeroclip-text="CREATE EXTERNAL TABLE intermediate_access_logs (
+ip STRING,
+date STRING,
+method STRING,
+url STRING,
+http_version STRING,
+code1 STRING,
+code2 STRING,
+dash STRING,
+user_agent STRING)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.contrib.serde2.RegexSerDe'
+WITH SERDEPROPERTIES (
+'input.regex' = '([^ ]*) - - \\[([^\\]]*)\\] &quot;([^\ ]*) ([^\ ]*) ([^\ ]*)&quot; (\\d*) (\\d*) &quot;([^&quot;]*)&quot; &quot;([^&quot;]*)&quot;',
+'output.format.string' = '%1$s %2$s %3$s %4$s %5$s %6$s %7$s %8$s %9$s'
+)
+LOCATION '/user/hive/warehouse/original_access_logs';
+
+CREATE EXTERNAL TABLE tokenized_access_logs (
+ip STRING,
+date STRING,
+method STRING,
+url STRING,
+http_version STRING,
+code1 STRING,
+code2 STRING,
+dash STRING,
+user_agent STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION '/user/hive/warehouse/tokenized_access_logs';
+
+ADD JAR {{lib_dir}}/hive/lib/hive-contrib.jar;
+
+INSERT OVERWRITE TABLE tokenized_access_logs SELECT * FROM intermediate_access_logs;
+
+!quit%%NL%%">Copy</button></div>
+0: jdbc:hive2://{{cluster_data.master_node}}:10000/default&gt; CREATE EXTERNAL TABLE intermediate_access_logs (
+ ip STRING,
+ date STRING,
+ method STRING,
+ url STRING,
+ http_version STRING,
+ code1 STRING,
+ code2 STRING,
+ dash STRING,
+ user_agent STRING)
+ ROW FORMAT SERDE 'org.apache.hadoop.hive.contrib.serde2.RegexSerDe'
+ WITH SERDEPROPERTIES (
+ 'input.regex' = '([^ ]*) - - \\[([^\\]]*)\\] "([^\ ]*) ([^\ ]*) ([^\ ]*)" (\\d*) (\\d*) "([^"]*)" "([^"]*)"',
+ 'output.format.string' = "%1$s %2$s %3$s %4$s %5$s %6$s %7$s %8$s %9$s"
+ )
+ LOCATION '/user/hive/warehouse/original_access_logs';
+
+0: jdbc:hive2://{{cluster_data.master_node}}:10000/default&gt; CREATE EXTERNAL TABLE tokenized_access_logs (
+ ip STRING,
+ date STRING,
+ method STRING,
+ url STRING,
+ http_version STRING,
+ code1 STRING,
+ code2 STRING,
+ dash STRING,
+ user_agent STRING)
+ ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+ LOCATION '/user/hive/warehouse/tokenized_access_logs';
+
+0: jdbc:hive2://{{cluster_data.master_node}}:10000/default&gt; ADD JAR {{lib_dir}}/hive/lib/hive-contrib.jar;
+
+0: jdbc:hive2://{{cluster_data.master_node}}:10000/default&gt; INSERT OVERWRITE TABLE tokenized_access_logs SELECT * FROM intermediate_access_logs;
+
+0: jdbc:hive2://{{cluster_data.master_node}}:10000/default&gt; !quit
+
+</pre>
+
+<p>To save time during queries, Impala does not poll constantly for metadata changes. So when you create new tables while Impala is running you must tell it to refresh the metadata. Go to Hue and open the Impala Query Editor app, and enter the following command:</p>
+
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd3">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd3=true" zeroclip-text="
+invalidate metadata;%%NL%%">Copy</button></div>
+invalidate metadata;
+</pre>
+</p>
+
+<p>Now, if you run 'show tables' or refresh the table list in the left-hand column, you should see the two new external tables in the default database.  Paste the following query into the Query Editor
+<pre class="clip_area"><div><span class="copy_label" ng-show="copied_cmd5">Text Copied!</span><button class="copy_button" ui-zeroclip zeroclip-copied="copied_cmd5=true" zeroclip-text="
+select count(*),url from tokenized_access_logs
+where url like '%\/product\/%'
+group by url order by count(*) desc;%%NL%%">Copy</button></div>
+select count(*),url from tokenized_access_logs
+where url like '%\/product\/%'
+group by url order by count(*) desc;
+</pre>
+</p>
+
+<p>You should see a result similar to the following:
+
+<img src='media/exercise_3.png' class='img-responsive' />
+</p>
+
+
+<p><em>If one of these steps fail, please reach out to our <a href="http://community.cloudera.com/t5/Cloudera-Live/bd-p/ClouderaLive" target="_FORUM_BLANK">Cloudera Live Forum</a>
+ and get help.</em></p>
+
+<p>By introspecting the results you quickly realize that this list contains many of the products on the most sold list from previous tutorial steps, but there is one product that did not show up in the previous result. There is one product that seems to be viewed a lot, but never purchased. Why?</p>
+
+
+<img src='media/missing_product.png' class='img-responsive bordered' />
+
+<p>Well, in our example with DataCo, once these odd findings are presented to your manager, it is immediately escalated. Eventually, someone figures out that on that view page, where most visitors stopped, the sales path of the product had a typo in the price for the item. Once the typo was fixed, and a correct price was displayed, the sales for that SKU started to rapidly increase.</p>
+
+<h3>CONCLUSION</h3>
+<p>If you hadn’t had an efficient and interactive tool enabling analytics on high-volume semi-structured data, this loss of revenue would have been missed for a long time. There is risk of loss if an organization looks for answers within partial data. Correlating two data sets for the same business question showed value, and being able to do so within the same platform made life easier for you and for the organization.</p>

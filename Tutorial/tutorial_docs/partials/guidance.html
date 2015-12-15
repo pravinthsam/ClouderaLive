@@ -1,0 +1,148 @@
+<h2 ng-if="platform!='quickstart'">Welcome to Your Cloudera Live Cluster!</h2>
+<h2 ng-if="platform=='quickstart'">Welcome to Your Cloudera QuickStart VM!</h2>
+
+<div class="row">
+
+<div class="col-md-6" style="height:100%;">
+<div ng-if="platform=='gogrid'" class="panel panel-danger" style="height:100%;">
+
+  <div class="panel-heading"><strong>Important!</strong></div>
+  <div class="panel-body">
+	<p class="warning_text"><h2 class="warning_text">Your pre-configured Cloudera Cluster is hosted on GoGrid, free, for 14 days.</h2>
+	Any additional machines or services that you request via the GoGrid portal may result in charges to your GoGrid account.</p>
+
+  </div>
+
+</div>
+</div>
+<div ng-class="platform=='gogrid' ? 'col-md-6' : 'col-md-12'">
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">Your Cluster</div>
+
+  <!-- Table -->
+  <table class="table">
+<tr>
+<th>Node</th>
+<th>Address</th>
+</tr>  
+<tr>
+	<td>Manager Node</td>
+	<td>{{ cluster_data.master_node_ip }}</td>
+</tr>
+<tr data-ng-repeat="i in data_node_indices">
+<td>Worker Node {{ i+1 }}</td>
+<td>{{ cluster_data.data_nodes_ip[i] }}</td>
+</tr>
+<tr ng-if="flavor=='cloudera-zoomdata'">
+<td>Zoomdata UI</td>
+<td>{{ cluster_data.zoomdata_node_ip }}</td>
+</tr>
+<tr ng-if="flavor=='cloudera-tableau'">
+<td>Tableau RDC</td>
+<td>{{ cluster_data.tableau_node_ip }}</td>
+</tr>
+<tr ng-if="flavor=='cloudera-pentaho'">
+<td>Pentaho RDC</td>
+<td>{{ cluster_data.pentaho_node_ip }}</td>
+</tr>
+<tr ng-if="flavor=='cloudera-trifacta'">
+<td>Trifacta UI</td>
+<td>{{ cluster_data.trifacta_node_ip }}</td>
+</tr>
+  </table>
+</div>
+</div>
+
+</div>
+
+
+<div class="jumbotron">
+<article>
+<img src="media/tn_training.gif" class="home_img" />
+  <h1>Get Started</h1>
+  <p>The tutorial below guides you through some analytic use cases, using the most popular open source tools included with CDH (including Cloudera Impala, Cloudera Search, and Hue). </p>
+  <p><a class="btn btn-primary btn-sm" href="#/tutorial/home" role="button">Start Tutorial</a></p>
+</article>
+<hr />
+<article>
+<img src="media/tn_hue.gif" class="home_img" />
+  <h1>Analyze Your Data</h1>
+  <p>Hue is the open source web interface for Hadoop that lets you analyze your data. Simply load in your data and then easily begin to analyze, search, and visualize it. <span ng-if="platform == 'quickstart'">In the QuickStart VM, the administrative username for Hue is 'cloudera' and the password is 'cloudera'.</span></p>
+  <p><a class="btn btn-primary btn-sm" href="http://{{ cluster_data.master_node_ip }}:8888/" target="_BLANK" role="button">Launch Hue UI</a></p>
+</article>
+<hr />
+<article>
+<img src="media/tn_cm.gif" class="home_img" />
+  <h1>Manage Your Cluster</h1>
+  <p>Cloudera Manager provides end-to-end system management for simple deployment and administration of CDH. Cloudera Manager also seamlessly integrates with existing third-party tools. </p>
+  <p ng-if="platform!='quickstart'"><a class="btn btn-primary btn-sm" href="http://{{ cluster_data.master_node_ip }}:7180/" target="_BLANK" role="button">Launch Cloudera Manager</a></p>
+  <p ng-if="platform=='quickstart'">Click "Launch Cloudera Manager" on the Desktop to get started.</p>
+</article>
+<hr  ng-if="platform!='quickstart'" />
+<article ng-if="platform!='quickstart'" >
+<img src="media/tn_cn.gif" class="home_img" />
+  <h1>Govern Your Data</h1>
+  <p>Cloudera Navigator allows you to track the lineage of your data, audit activity on your cluster, and enforce policies about what you're storing. </p>
+  <p ng-if="platform!='quickstart'"><a class="btn btn-primary btn-sm" href="http://{{ cluster_data.master_node_ip }}:7187/" target="_BLANK" role="button">Launch Cloudera Navigator</a></p>
+  <p ng-if="platform=='quickstart'">Click "Launch Cloudera Manager" on the Desktop to get started.</p>
+</article>
+<hr />
+<article ng-if="platform=='gogrid'">
+<img src="media/tn_gogrid.gif" class="home_img" />
+  <h1>GoGrid</h1>
+  <p>Your demo cluster is hosted on GoGrid's cloud infrastructure. Access your servers directly using GoGrid’s management console.</p>
+  <p><a class="btn btn-primary btn-sm" href="http://my.gogrid.com/" target="_BLANK" role="button">Open GoGrid Console</a></p>
+</article>
+
+<hr ng-if="flavor=='cloudera-zoomdata'" />
+<article ng-if="flavor=='cloudera-zoomdata'">
+<img src="media/tn_zd_training.png" class="home_img" />
+  <h1>ZoomData on Cloudera Live Training</h1>
+  <p>Learn how to use ZoomData to visualize the data in your Cloudera Live cluster.</p>
+  <p><a class="btn btn-primary btn-sm" href="https://zoomdata.zendesk.com/hc/en-us/sections/200580826" target="_BLANK" role="button">Training Articles</a></p>
+</article>
+<hr ng-if="flavor=='cloudera-zoomdata'" />
+<article ng-if="flavor=='cloudera-zoomdata'">
+<img src="media/tn_zoomdata.gif" class="home_img" />
+  <h1>ZoomData</h1>
+  <p>Visualize your data with ZoomData.</p>
+  <p><a class="btn btn-primary btn-sm" href="http://{{ cluster_data.zoomdata_node_ip }}:8080/zoomdata/" target="_BLANK" role="button">Zoomdata Server</a></p>
+</article>
+
+<hr ng-if="flavor=='cloudera-tableau'" />
+<article ng-if="flavor=='cloudera-tableau'">
+<img src="media/tn_tableau.gif" class="home_img" />
+  <h1>Visualize Your Data</h1>
+  <p>Cloudera has the broadest network of partners in the industry so you can continue to leverage existing investments. See how Tableau can be an integrated part of CDH, to help you visualize your data.</p>
+  <p><a class="btn btn-primary btn-sm" href="http://www.tableausoftware.com/Cloudera-Live#tutorial" target="_BLANK" role="button">Tableau Tutorial</a></p>
+</article>
+
+<hr ng-if="flavor=='cloudera-trifacta'" />
+<article ng-if="flavor=='cloudera-trifacta'">
+<img src="media/tn_trifacta_getting_started.png" class="home_img" />
+  <h1>Getting Started with Trifacta</h1>
+  <p>Accelerate your experience wrangling data of all shapes and sizes with Trifacta by checking out our Getting Started Guide.</p>
+  <p><a class="btn btn-primary btn-sm" href="http://support.trifacta.com/knowledgebase/topics/73383-essentials" target="_BLANK" role="button">Trifacta Getting Started Guide</a></p>
+</article>
+<hr ng-if="flavor=='cloudera-trifacta'" />
+<article ng-if="flavor=='cloudera-trifacta'">
+<img src="media/tn_trifacta.gif" class="home_img" />
+  <h1>Trifacta</h1>
+  <p>Trifacta dramatically improves the productivity of transforming raw data in your Cloudera cluster into clean, structured formats for analysis.</p>
+  <p><a class="btn btn-primary btn-sm" href="http://{{ cluster_data.trifacta_node_ip }}:3005" target="_BLANK" role="button">Launch Trifacta</a></p>
+</article>
+
+</div>
+
+<table width="100%">
+<tr valign="top">
+<td>
+<h2 ng-if="platform=='gogrid'">Next Steps</h2>
+<p ng-if="platform=='gogrid'">After the 14-day trial period ends, there are many options to continue using Cloudera. We will reach out during your trial, but feel free to contact us  at <a href="mailto:cloudera-live-sales@cloudera.com">cloudera-live-sales@cloudera.com</a> if you have any questions in the meantime.</p>
+<p ng-if="platform=='quickstart'">The QuickStart VM is just a single-node "pseudo-distributed cluster". To take your Big Data work to the next level, visit <a href="http://live.cloudera.com">live.cloudera.com</a> to try a fully-distributed cluster, or contact <a href="mailto:cloudera-live-sales@cloudera.com">cloudera-live-sales@cloudera.com</a></p>
+</td>
+</tr>
+</table>
+
+</section>
