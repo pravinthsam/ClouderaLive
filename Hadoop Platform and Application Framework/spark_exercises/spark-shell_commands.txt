@@ -1,0 +1,33 @@
+# check if things are working
+sc.version
+
+# Load textfile from local and hdfs
+textRDD = sc.textFile("file:///home/cloudera/Downloads/testfile1")
+textRDD = sc.textFile("hdfs:///user/examples/wordcount_py/testfile1")
+
+# Wordcount
+textRDD = textRDD.flatMap(lambda x: x.split()).map(lambda x: (x, 1)).reduceByKey(lambda x, y: x+y)
+textRdd.collect()
+
+# Simple Join
+fileA = sc.textFile('file:///home/cloudera/Downloads/join1_FileA.txt')
+fileB = sc.textFile('file:///home/cloudera/Downloads/join1_FileB.txt')
+
+fileA_data = fileA.map(lambda x: x.split(',',1)).map( lambda x: (x[0], int(x[1].strip())) )
+fileA_data.collect()
+
+fileB_data = fileB.map( lambda x: x.split(',',1)  ).map( lambda x: (x[0].split()[1], x[0].split()[0] + ' ' + x[1]) )
+fileB_data.collect()
+
+fileB_joined_fileA = fileB_data.join(fileA_data)
+fileB_joined_fileA.collect()
+
+# Complex Join
+show_views_file = sc.textFile("file:///home/cloudera/Downloads/join2_gennum?.txt")
+show_channel_file = sc.textFile("file:///home/cloudera/Downloads/join2_genchan?.txt")
+
+views_data = show_views_file.map( lambda x: x.split(',',1) ) . map ( lambda x: (x[0], int(x[1].strip())) ).cache()
+channel_data = show_channel_file.map( lambda x: x.split(',',1) ).cache()
+
+joined_dataset = channel_data.join(views_data)
+joined_dataset . map( lambda x: (x[1][0],  x[1][1]) ) . reduceByKey ( lambda x, y: x+y ) . collect()
